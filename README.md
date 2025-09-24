@@ -1,13 +1,4 @@
-<<<<<<< HEAD
-# curriculoNovo
-<<<<<<< HEAD
-marco@MarcosRoberto MINGW64 ~/OneDrive/Documentos/GitHub/curriculoNovo/resume-craft-main (main|REBASE 1/1)
-$ git rebase --continue
-README.md: needs merge
-You must edit all merge conflicts and then
-mark them as resolved using git add
-=======
-=======
+
 # [Next.js 14 na prática: Crie uma aplicação Full Stack](https://devbygb.com/courses/next-14-na-pratica-crie-uma-aplicacao-full-stack/details)
 
 Neste curso, você aprenderá a criar do zero ao deploy o **ResumeCraft**, um poderoso criador de currículos interativo inspirado no projeto open-source [RxResu.me](https://rxresu.me/). Este curso oferece uma experiência prática e detalhada, desde a concepção até a implementação final de um projeto completo utilizando as mais recentes tecnologias do mercado.
