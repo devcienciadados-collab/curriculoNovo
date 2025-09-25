@@ -11,7 +11,7 @@
     "db:push": "npx drizzle-kit push",
     "db:generate": "npx drizzle-kit generate",
     "db:migrate": "tsx ./src/db/migrate.ts",
-    "postinstall": "yarn db:migrate"
+    "postinstall": "if [ \"$VERCEL_ENV\" = \"production\" ]; then yarn db:push; fi"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.4.2",
