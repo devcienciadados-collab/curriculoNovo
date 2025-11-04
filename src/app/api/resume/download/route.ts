@@ -45,7 +45,7 @@ export const POST = async (request: Request) => {
 
     await browser.close();
 
-    return new Response(pdf, {
+    return new Response(Buffer.from(pdf), {
       headers: {
         "Content-type": "application/pdf",
       }
