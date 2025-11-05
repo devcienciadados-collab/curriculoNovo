@@ -1,6 +1,6 @@
 import { decrementUserCredits } from "@/db/actions";
 import { getUserCredits } from "@/db/queries";
-import { openai } from "@/lib/openai";
+import { genAI } from "@/lib/gemini";
 import { isValidJSON } from "@/lib/utils";
 import { z } from "zod";
 
@@ -20,27 +20,23 @@ export const POST = async (request: Request) => {
 
     const { content } = schema.parse(body);
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "user",
-          content: `
-          Baseado no JSON abaixo, avalie todos os campos alterando o conteúdo de todos eles, aprimorando o texto para parecer mais claro e profissional, pois será usado em currículos.
-          Também corrija erros gramaticais e de concordância, se necessário.
-          Mantenha dados pessoais, links, emails, etc. como estão, apenas altere o texto dos campos.
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-          **Lembre-se de retornar um JSON válido e bem formatado.**
+    const prompt = `
+      Baseado no JSON abaixo, avalie todos os campos alterando o conteúdo de todos eles, aprimorando o texto para parecer mais claro e profissional, pois será usado em currículos.
+      Também corrija erros gramaticais e de concordância, se necessário.
+      Mantenha dados pessoais, links, emails, etc. como estão, apenas altere o texto dos campos.
 
-          **JSON:**
+      **Lembre-se de retornar um JSON válido e bem formatado.**
 
-          ${JSON.stringify(content, null, 2)}
-        `,
-        },
-      ],
-    });
+      **JSON:**
 
-    const json = completion.choices[0].message.content ?? "";
+      ${JSON.stringify(content, null, 2)}
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const json = response.text();
 
     if (!isValidJSON(json)) throw new Error("JSON inválido.");
 
