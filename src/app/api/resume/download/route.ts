@@ -3,6 +3,7 @@ import { formatTailwindHTML } from "@/lib/utils";
 // Configuração para Vercel
 export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export const POST = async (request: Request) => {
   try {
