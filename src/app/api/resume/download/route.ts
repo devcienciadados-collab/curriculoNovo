@@ -42,7 +42,6 @@ export const POST = async (request: Request) => {
         defaultViewport: chromium.defaultViewport,
         executablePath: await chromium.executablePath(),
         headless: chromium.headless,
-        ignoreHTTPSErrors: true,
       });
     }
 
