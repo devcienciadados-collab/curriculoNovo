@@ -24,25 +24,45 @@ export const formatTailwindHTML = (
   structure: ResumeStructureData,
 ) => {
   const colorKey = structure.colorTheme as keyof typeof colors;
+  const primaryColor = colors[colorKey]?.[500] || colors.blue[500];
 
   return `
-    <html>
+    <!DOCTYPE html>
+    <html lang="pt-BR">
       <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+          :root {
+            --resume-primary: ${primaryColor};
+          }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+          body {
+            margin: 0;
+            padding: 0;
+          }
+        </style>
         <script>
-          tailwind.config = ${JSON.stringify(tailwindConfig)};
-          document.documentElement.style.setProperty(
-            "--resume-primary",
-            "${colors[colorKey][500]}"
-          );
+          tailwind.config = {
+            theme: {
+              extend: {
+                colors: {
+                  primary: "var(--resume-primary)"
+                }
+              }
+            }
+          };
         </script>
       </head>
-
       <body>
         ${html}
       </body>
     </html>
-  `
+  `;
 }
 
 export const isValidJSON = (json: string) => {
