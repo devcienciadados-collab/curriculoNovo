@@ -51,14 +51,10 @@ export const POST = async (request: Request) => {
     try {
       const page = await browser.newPage();
       
-      // Carregar conteúdo HTML com timeout reduzido
+      // Carregar conteúdo HTML
       await page.setContent(formatTailwindHTML(html, structure), {
-        waitUntil: 'domcontentloaded',
-        timeout: 10000
+        waitUntil: 'networkidle0',
       });
-
-      // Aguardar renderização
-      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Gerar PDF com altura fixa para evitar problemas de cálculo
       const pdf = await page.pdf({
