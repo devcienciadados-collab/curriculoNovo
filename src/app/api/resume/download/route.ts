@@ -1,11 +1,16 @@
 import { formatTailwindHTML } from "@/lib/utils";
+import puppeteer from "puppeteer";
+import puppeteerCore from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 
 // Configuração para Vercel
 export const maxDuration = 30;
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export const POST = async (request: Request) => {
+  let browser;
+
   try {
     const body = await request.json();
     const { html, structure } = body;
@@ -17,75 +22,63 @@ export const POST = async (request: Request) => {
       );
     }
 
-    // Import dinâmico para evitar problemas de tipos
-    const puppeteer = await import('puppeteer');
-    const puppeteerCore = await import('puppeteer-core');
-    const chromium = await import('@sparticuz/chromium');
-
-    let browser;
-
     // Configuração para desenvolvimento e produção
     if (process.env.NODE_ENV === "development") {
-      browser = await puppeteer.default.launch({
+      browser = await puppeteer.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
       });
     } else {
       // Configuração otimizada para Vercel
-      browser = await puppeteerCore.default.launch({
+      browser = await puppeteerCore.launch({
         args: [
-          ...chromium.default.args,
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
-          '--single-process',
-          '--no-zygote'
+          ...chromium.args,
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--single-process",
+          "--no-zygote",
         ],
-        defaultViewport: chromium.default.defaultViewport,
-        executablePath: await chromium.default.executablePath(),
-        headless: chromium.default.headless,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
       });
     }
 
-    try {
-      const page = await browser.newPage();
-      
-      // Carregar conteúdo HTML
-      await page.setContent(formatTailwindHTML(html, structure), {
-        waitUntil: 'networkidle0',
-      });
+    const page = await browser.newPage();
 
-      // Gerar PDF com altura fixa para evitar problemas de cálculo
-      const pdf = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: { top: '0.5in', right: '0.5in', bottom: '0.5in', left: '0.5in' }
-      });
+    // Carregar conteúdo HTML
+    await page.setContent(formatTailwindHTML(html, structure), {
+      waitUntil: "networkidle0",
+    });
 
-      await browser.close();
+    // Gerar PDF
+    const pdf = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      margin: { top: "0.5in", right: "0.5in", bottom: "0.5in", left: "0.5in" },
+    });
 
-      return new Response(Buffer.from(pdf), {
-        headers: {
-          "Content-Type": "application/pdf",
-          "Cache-Control": "no-cache",
-          "Content-Disposition": "attachment; filename=curriculo.pdf"
-        }
-      });
+    await browser.close();
 
-    } catch (pageError) {
-      await browser.close();
-      throw pageError;
-    }
-
+    return new Response(pdf, {
+      headers: {
+        "Content-Type": "application/pdf",
+      },
+    });
   } catch (error) {
+    if (browser) {
+      await browser.close();
+    }
+
     console.error("PDF Generation Error:", error);
     return Response.json(
-      { 
-        message: "Erro ao gerar PDF", 
-        error: error instanceof Error ? error.message : "Erro desconhecido"
+      {
+        message: "Erro ao gerar PDF",
+        error:
+          error instanceof Error ? error.message : "Ocorreu um erro inesperado.",
       },
       { status: 500 }
     );
   }
-}
+};
