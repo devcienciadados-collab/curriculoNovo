@@ -1,7 +1,4 @@
 import { formatTailwindHTML } from "@/lib/utils";
-import puppeteer from "puppeteer";
-import puppeteerCore from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
 
 // Configuração para Vercel
 export const maxDuration = 30;
@@ -21,17 +18,22 @@ export const POST = async (request: Request) => {
       );
     }
 
-    // Configuração otimizada para Vercel
+    // Import dinâmico para evitar problemas de tipos
+    const puppeteer = await import('puppeteer');
+    const puppeteerCore = await import('puppeteer-core');
+    const chromium = await import('@sparticuz/chromium');
+
+    // Configuração para desenvolvimento e produção
     if (process.env.NODE_ENV === "development") {
-      browser = await puppeteer.launch({
+      browser = await puppeteer.default.launch({
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox']
       });
     } else {
-      // Configuração para produção no Vercel
-      browser = await puppeteerCore.launch({
+      // Configuração otimizada para Vercel
+      browser = await puppeteerCore.default.launch({
         args: [
-          ...chromium.args,
+          ...chromium.default.args,
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
@@ -39,36 +41,32 @@ export const POST = async (request: Request) => {
           '--single-process',
           '--no-zygote'
         ],
-        defaultViewport: chromium.defaultViewport,
-        executablePath: await chromium.executablePath(),
-        headless: chromium.headless,
+        defaultViewport: chromium.default.defaultViewport,
+        executablePath: await chromium.default.executablePath(),
+        headless: chromium.default.headless,
       });
     }
 
     const page = await browser.newPage();
     
-    // Timeout para evitar travamentos
+    // Configurar timeout
     await page.setDefaultTimeout(20000);
     
-    // Aguardar o conteúdo carregar completamente
+    // Carregar conteúdo HTML
     await page.setContent(formatTailwindHTML(html, structure), {
       waitUntil: 'networkidle0',
       timeout: 15000
     });
 
-    // Aguardar fontes e estilos carregarem
-    await page.evaluateHandle('document.fonts.ready');
+    // Aguardar renderização
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
+    // Calcular altura do documento de forma simples
     const bodyHeight = await page.evaluate(() => {
-      return Math.max(
-        document.body.scrollHeight,
-        document.body.offsetHeight,
-        document.documentElement.clientHeight,
-        document.documentElement.scrollHeight,
-        document.documentElement.offsetHeight
-      ) + 20;
+      return document.body.scrollHeight + 20;
     });
 
+    // Gerar PDF
     const pdf = await page.pdf({
       width: "210mm",
       height: `${bodyHeight}px`,
