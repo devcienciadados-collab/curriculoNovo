@@ -11,6 +11,13 @@ const schema = z.object({
 
 export const POST = async (request: Request) => {
   try {
+    if (!genAI) {
+      return Response.json(
+        { message: "A chave da API do Google não está configurada." },
+        { status: 500 }
+      );
+    }
+
     const credits = await getUserCredits();
 
     if (credits <= 0) {
