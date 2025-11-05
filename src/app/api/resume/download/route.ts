@@ -8,6 +8,8 @@ export const maxDuration = 30;
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 export const POST = async (request: Request) => {
   let browser;
 
@@ -22,61 +24,94 @@ export const POST = async (request: Request) => {
       );
     }
 
-    // Configuração para desenvolvimento e produção
-    if (process.env.NODE_ENV === "development") {
-      browser = await puppeteer.launch({
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      });
-    } else {
-      // Configuração otimizada para Vercel
+    // Configuração otimizada para Vercel
+    if (isProduction) {
+      await chromium.font(
+        "https://raw.githack.com/googlei18n/noto-emoji/master/fonts/NotoColorEmoji.ttf"
+      );
+      
       browser = await puppeteerCore.launch({
         args: [
           ...chromium.args,
           "--no-sandbox",
           "--disable-setuid-sandbox",
           "--disable-dev-shm-usage",
+          "--disable-gpu",
           "--single-process",
           "--no-zygote",
+          "--disable-web-security",
+          "--disable-features=VizDisplayCompositor",
         ],
-        defaultViewport: chromium.defaultViewport,
+        defaultViewport: { width: 1280, height: 720 },
         executablePath: await chromium.executablePath(),
-        headless: chromium.headless,
+        headless: true,
+      });
+    } else {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+        ],
       });
     }
 
     const page = await browser.newPage();
+    
+    // Configurar timeout e viewport
+    await page.setDefaultTimeout(25000);
+    await page.setViewport({ width: 1280, height: 720 });
 
-    // Carregar conteúdo HTML
+    // Carregar conteúdo HTML com timeout reduzido
     await page.setContent(formatTailwindHTML(html, structure), {
-      waitUntil: "networkidle0",
+      waitUntil: "domcontentloaded",
+      timeout: 20000,
     });
 
-    // Gerar PDF
+    // Aguardar um pouco para garantir que o CSS seja aplicado
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Gerar PDF com configurações otimizadas
     const pdf = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: "0.5in", right: "0.5in", bottom: "0.5in", left: "0.5in" },
+      preferCSSPageSize: true,
+      margin: { 
+        top: "0.5in", 
+        right: "0.5in", 
+        bottom: "0.5in", 
+        left: "0.5in" 
+      },
+      timeout: 20000,
     });
 
+    await page.close();
     await browser.close();
 
     return new Response(Buffer.from(pdf), {
       headers: {
         "Content-Type": "application/pdf",
+        "Content-Disposition": "attachment; filename=curriculo.pdf",
+        "Cache-Control": "no-cache",
       },
     });
   } catch (error) {
+    console.error("PDF Generation Error:", error);
+    
     if (browser) {
-      await browser.close();
+      try {
+        await browser.close();
+      } catch (closeError) {
+        console.error("Error closing browser:", closeError);
+      }
     }
 
-    console.error("PDF Generation Error:", error);
     return Response.json(
       {
         message: "Erro ao gerar PDF",
-        error:
-          error instanceof Error ? error.message : "Ocorreu um erro inesperado.",
+        error: error instanceof Error ? error.message : "Ocorreu um erro inesperado.",
+        details: isProduction ? undefined : error,
       },
       { status: 500 }
     );
