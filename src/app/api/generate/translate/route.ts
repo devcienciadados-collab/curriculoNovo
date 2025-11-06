@@ -1,6 +1,6 @@
 import { decrementUserCredits } from "@/db/actions";
 import { getUserCredits } from "@/db/queries";
-import { genAI } from "@/lib/gemini";
+import { generateContent } from "@/lib/gemini";
 import { isValidJSON } from "@/lib/utils";
 import { z } from "zod";
 
@@ -11,24 +11,13 @@ const schema = z.object({
 
 export const POST = async (request: Request) => {
   try {
-    if (!genAI) {
-      return Response.json(
-        { message: "A chave da API do Google não está configurada." },
-        { status: 500 }
-      );
-    }
-
     const credits = await getUserCredits();
-
     if (credits <= 0) {
       return Response.json({ message: "Créditos insuficientes." }, { status: 403 });
     }
 
     const body = await request.json();
-
     const { content, language } = schema.parse(body);
-
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
       Baseado no JSON abaixo, traduza todos os valores dos campos para a linguagem ${language}, não importa qual linguagem o valor está escrito originalmente. Também aprimore o texto para parecer mais claro e profissional, pois será usado em currículos.
@@ -44,18 +33,19 @@ export const POST = async (request: Request) => {
       ${JSON.stringify(content, null, 2)}
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const json = response.text();
+    const json = await generateContent(prompt);
 
     if (!isValidJSON(json)) throw new Error("JSON inválido.");
 
     await decrementUserCredits(1);
 
-    return Response.json({ data: json });
+    return Response.json({ data: JSON.parse(json) });
   } catch (error) {
     return Response.json(
-      { message: "Ocorreu um erro inesperado.", error },
+      {
+        message: "Ocorreu um erro inesperado.",
+        error: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
