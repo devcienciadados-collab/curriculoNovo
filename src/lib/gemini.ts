@@ -1,15 +1,15 @@
 import { GoogleGenAI } from "@google/genai";
 
-if (!process.env.GOOGLE_API_KEY) {
-  throw new Error("GOOGLE_API_KEY não encontrada nas variáveis de ambiente");
-}
-
-const ai = new GoogleGenAI({
-  apiKey: process.env.GOOGLE_API_KEY,
-});
+const getApiKey = () => {
+  return process.env.GOOGLE_API_KEY || "AIzaSyDcDmSUuR0A1gejUnF4yclqQk24kNWPtZg";
+};
 
 export const generateContent = async (prompt: string): Promise<string> => {
   try {
+    const ai = new GoogleGenAI({
+      apiKey: getApiKey(),
+    });
+    
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
@@ -20,5 +20,9 @@ export const generateContent = async (prompt: string): Promise<string> => {
     throw new Error("Falha na geração de conteúdo com IA");
   }
 };
+
+const ai = new GoogleGenAI({
+  apiKey: getApiKey(),
+});
 
 export default ai;
