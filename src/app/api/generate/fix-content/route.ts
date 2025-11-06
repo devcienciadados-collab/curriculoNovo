@@ -1,6 +1,8 @@
 import { decrementUserCredits } from "@/db/actions";
 import { getUserCredits } from "@/db/queries";
-import { genAI } from "@/lib/gemini";
+//import { genAI } from "@/lib/gemini";
+
+import genAI from "@/lib/gemini";
 import { isValidJSON } from "@/lib/utils";
 import { z } from "zod";
 
