@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+/* import { GoogleGenAI } from "@google/genai";
 
 /**
  * Adapter mínimo: não executa nada ao importar.
@@ -8,13 +8,27 @@ import { GoogleGenAI } from "@google/genai";
 const apiKey = process.env.GOOGLE_API_KEY;
 let ai: any = null;
 
-try {
-  if (apiKey) {
-    ai = new GoogleGenAI({ apiKey });
-  }
-} catch (e) {
-  // SDK pode não estar presente em todos os ambientes — tratamos no generateContent
-  ai = null;
+// Tenta carregar dinamicamente o SDK oficial se disponível; caso contrário mantém ai = null.
+// Não usamos top-level await para manter compatibilidade com mais ambientes.
+if (apiKey) {
+  import("@google/genai")
+    .then((mod: any) => {
+      const GoogleGenAI = mod?.GoogleGenAI ?? mod?.default;
+      if (GoogleGenAI) {
+        try {
+          ai = new GoogleGenAI({ apiKey });
+        } catch {
+          // falha ao instanciar: manter fallback para fetch
+          ai = null;
+        }
+      } else {
+        ai = null;
+      }
+    })
+    .catch(() => {
+      // SDK não disponível ou falha ao carregar
+      ai = null;
+    });
 }
 
 function createClient(apiKey?: string) {
@@ -66,3 +80,4 @@ function createClient(apiKey?: string) {
 
 const genAI: any = createClient();
 export default genAI;
+ 
