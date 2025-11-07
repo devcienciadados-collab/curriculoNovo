@@ -10,12 +10,13 @@ export const useResumeDownload = (title?: string) => {
     mutationFn: ApiService.getResumeUrl,
   });
 
-  const handleDownloadResume = async () => {
+  const handleDownloadResume = async (retryCount: number = 0) => {
     const resume = document.getElementById("resume-content");
 
     if (!resume) return;
 
     const structure = getValues("structure");
+    const maxRetries = 2;
 
     try {
       const url = await handleGetResumeUrl({
@@ -34,7 +35,20 @@ export const useResumeDownload = (title?: string) => {
 
       window.URL.revokeObjectURL(url);
     } catch (error: any) {
-      console.error("Download error:", error); // Log the full error
+      console.error("Download error:", error);
+      
+      // Retry logic para timeouts
+      if (retryCount < maxRetries && (error.code === 'FUNCTION_INVOCATION_TIMEOUT' || error.message?.includes('timeout'))) {
+        toast({
+          title: "Tentando novamente...",
+          description: `Tentativa ${retryCount + 2} de ${maxRetries + 1}`,
+        });
+        
+        // Aguardar um pouco antes de tentar novamente
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return handleDownloadResume(retryCount + 1);
+      }
+      
       let message = "Ocorreu um erro inesperado.";
 
       if (error.response?.data) {
@@ -58,8 +72,10 @@ export const useResumeDownload = (title?: string) => {
     }
   };
 
+  const downloadResume = () => handleDownloadResume(0);
+
   return {
-    handleDownloadResume,
+    handleDownloadResume: downloadResume,
     isLoading: isPending,
   };
 };

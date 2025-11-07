@@ -4,8 +4,8 @@ import puppeteer from "puppeteer";
 import puppeteerCore from "puppeteer-core";
 import chromium from "@sparticuz/chromium";
 
-// Configuração para Vercel
-export const maxDuration = 30;
+// Configuração para Vercel (plano gratuito)
+export const maxDuration = 10;
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
@@ -60,31 +60,30 @@ export const POST = async (request: Request) => {
 
     const page = await browser.newPage();
     
-    // Configurar timeout e viewport
-    await page.setDefaultTimeout(25000);
+    // Configurar timeout e viewport (otimizado para 10s)
+    await page.setDefaultTimeout(8000);
     await page.setViewport({ width: 1280, height: 720 });
 
-    // Carregar conteúdo HTML com timeout reduzido
+    // Carregar conteúdo HTML rapidamente
     await page.setContent(formatTailwindHTML(html, structure), {
       waitUntil: "domcontentloaded",
-      timeout: 20000,
+      timeout: 5000,
     });
 
-    // Aguardar um pouco para garantir que o CSS seja aplicado
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Aguardar CSS (reduzido)
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-    // Gerar PDF com configurações otimizadas
+    // Gerar PDF rapidamente
     const pdf = await page.pdf({
       format: "A4",
       printBackground: true,
-      preferCSSPageSize: true,
       margin: { 
         top: "0.5in", 
         right: "0.5in", 
         bottom: "0.5in", 
         left: "0.5in" 
       },
-      timeout: 20000,
+      timeout: 6000,
     });
 
     await page.close();
