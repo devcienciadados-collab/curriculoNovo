@@ -67,3 +67,53 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Estilos específicos para melhorar a renderização do PDF */
+#resume-content {
+  -webkit-print-color-adjust: exact !important;
+  color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+#resume-content * {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+#resume-content h1,
+#resume-content h2,
+#resume-content h3,
+#resume-content h4,
+#resume-content h5,
+#resume-content h6 {
+  line-height: 1.2 !important;
+  margin-bottom: 0.5rem !important;
+  font-weight: 600 !important;
+}
+
+#resume-content p {
+  line-height: 1.4 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+#resume-content .space-y-2 > * + * {
+  margin-top: 0.5rem !important;
+}
+
+#resume-content .space-y-4 > * + * {
+  margin-top: 1rem !important;
+}
+
+/* Garantir que elementos não se sobreponham */
+#resume-content section {
+  position: relative !important;
+  z-index: 1 !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Melhorar contraste para PDF */
+#resume-content {
+  background-color: white !important;
+  color: #000000 !important;
+}

@@ -24,28 +24,82 @@ export const useResumeDownload = (title?: string) => {
         description: "Aguarde enquanto processamos seu currículo.",
       });
 
-      // Captura o elemento como canvas
+      // Preparar o DOM para captura
+      const originalStyle = resume.style.cssText;
+      
+      // Aplicar estilos temporários para melhor renderização
+      resume.style.cssText = `
+        ${originalStyle}
+        position: relative !important;
+        z-index: 999 !important;
+        background: white !important;
+        width: 794px !important;
+        min-height: auto !important;
+        padding: 20px !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        transform: none !important;
+      `;
+      
+      // Aguardar fontes e layout
+      await document.fonts.ready;
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Forçar reflow
+      resume.offsetHeight;
+      
+      // Captura o elemento como canvas com configurações otimizadas
       const canvas = await html2canvas(resume, {
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
         allowTaint: true,
         backgroundColor: '#ffffff',
-        width: resume.scrollWidth,
-        height: resume.scrollHeight,
+        width: resume.offsetWidth,
+        height: resume.offsetHeight,
+        scrollX: 0,
+        scrollY: 0,
+        windowWidth: resume.offsetWidth,
+        windowHeight: resume.offsetHeight,
+        onclone: (clonedDoc) => {
+          // Garantir que estilos sejam aplicados no clone
+          const clonedElement = clonedDoc.getElementById('resume-content');
+          if (clonedElement) {
+            clonedElement.style.transform = 'none';
+            clonedElement.style.width = resume.offsetWidth + 'px';
+            clonedElement.style.height = 'auto';
+          }
+        }
       });
+      
+      // Restaurar estilo original
+      resume.style.cssText = originalStyle;
 
-      // Cria o PDF
+      // Cria o PDF com margens adequadas
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4'
+        format: 'a4',
+        compress: true
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      // Calcular dimensões mantendo proporção
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
+      
+      // Centralizar na página
+      const x = (pdfWidth - finalWidth) / 2;
+      const y = (pdfHeight - finalHeight) / 2;
 
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight);
       
       // Download do PDF
       pdf.save(`${title ?? "Currículo"}.pdf`);
