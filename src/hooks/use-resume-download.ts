@@ -34,6 +34,7 @@ export const useResumeDownload = (title?: string) => {
 
       window.URL.revokeObjectURL(url);
     } catch (error: any) {
+      console.error("Download error:", error); // Log the full error
       let message = "Ocorreu um erro inesperado.";
 
       if (error.response?.data) {
@@ -41,8 +42,12 @@ export const useResumeDownload = (title?: string) => {
           const errorData = JSON.parse(await error.response.data.text());
           message = errorData.error || message;
         } catch (e) {
-          // Ignore json parse error
+          message = "Erro ao processar a resposta do servidor.";
         }
+      } else if (error.request) {
+        message = "Sem resposta do servidor. Verifique sua conexão.";
+      } else {
+        message = error.message || message;
       }
       
       toast({
