@@ -108,11 +108,24 @@ export const POST = async (request: Request) => {
       }
     }
 
+    let errorMessage = "Ocorreu um erro inesperado.";
+    let errorDetails = error;
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else {
+      try {
+        errorMessage = JSON.stringify(error);
+      } catch {
+        errorMessage = "Ocorreu um erro inesperado e não serializável.";
+      }
+    }
+
     return Response.json(
       {
         message: "Erro ao gerar PDF",
-        error: error instanceof Error ? error.message : "Ocorreu um erro inesperado.",
-        details: isProduction ? undefined : error,
+        error: errorMessage,
+        details: errorDetails,
       },
       { status: 500 }
     );
