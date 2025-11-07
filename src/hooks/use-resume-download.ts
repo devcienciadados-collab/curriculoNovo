@@ -1,82 +1,76 @@
 import { toast } from "@/components/ui/use-toast";
-import { ApiService } from "@/services/api";
-import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { useFormContext } from "react-hook-form";
 
 export const useResumeDownload = (title?: string) => {
   const { getValues } = useFormContext<ResumeData>();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { mutateAsync: handleGetResumeUrl, isPending } = useMutation({
-    mutationFn: ApiService.getResumeUrl,
-  });
-
-  const handleDownloadResume = async (retryCount: number = 0) => {
+  const handleDownloadResume = async () => {
     const resume = document.getElementById("resume-content");
-
     if (!resume) return;
 
-    const structure = getValues("structure");
-    const maxRetries = 2;
+    setIsLoading(true);
 
     try {
-      const url = await handleGetResumeUrl({
-        html: resume.outerHTML,
-        structure,
+      // Importação dinâmica para reduzir bundle
+      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+        import('jspdf'),
+        import('html2canvas')
+      ]);
+
+      toast({
+        title: "Gerando PDF...",
+        description: "Aguarde enquanto processamos seu currículo.",
       });
-  
-      if(!url) return;
 
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", `${title ?? "Currículo"}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      // Captura o elemento como canvas
+      const canvas = await html2canvas(resume, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        width: resume.scrollWidth,
+        height: resume.scrollHeight,
+      });
 
-      window.URL.revokeObjectURL(url);
+      // Cria o PDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      
+      // Download do PDF
+      pdf.save(`${title ?? "Currículo"}.pdf`);
+
+      toast({
+        title: "PDF gerado com sucesso!",
+        description: "Seu currículo foi baixado.",
+      });
+
     } catch (error: any) {
       console.error("Download error:", error);
       
-      // Retry logic para timeouts
-      if (retryCount < maxRetries && (error.code === 'FUNCTION_INVOCATION_TIMEOUT' || error.message?.includes('timeout'))) {
-        toast({
-          title: "Tentando novamente...",
-          description: `Tentativa ${retryCount + 2} de ${maxRetries + 1}`,
-        });
-        
-        // Aguardar um pouco antes de tentar novamente
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return handleDownloadResume(retryCount + 1);
-      }
-      
-      let message = "Ocorreu um erro inesperado.";
-
-      if (error.response?.data) {
-        try {
-          const errorData = JSON.parse(await error.response.data.text());
-          message = errorData.error || message;
-        } catch (e) {
-          message = "Erro ao processar a resposta do servidor.";
-        }
-      } else if (error.request) {
-        message = "Sem resposta do servidor. Verifique sua conexão.";
-      } else {
-        message = error.message || message;
-      }
-      
       toast({
-        title: "Erro ao baixar currículo",
-        description: message,
+        title: "Erro ao gerar PDF",
+        description: "Tente novamente em alguns instantes.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const downloadResume = () => handleDownloadResume(0);
-
   return {
-    handleDownloadResume: downloadResume,
-    isLoading: isPending,
+    handleDownloadResume,
+    isLoading,
   };
 };
 
