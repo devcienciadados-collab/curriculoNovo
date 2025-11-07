@@ -68,52 +68,170 @@
   }
 }
 
-/* Estilos específicos para melhorar a renderização do PDF */
+/* Estilos para impressão e PDF */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  #resume-content {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    margin: 0 !important;
+    padding: 15mm !important;
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
+
+/* Estilos específicos para renderização do PDF */
 #resume-content {
   -webkit-print-color-adjust: exact !important;
   color-adjust: exact !important;
   print-color-adjust: exact !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
 #resume-content * {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  box-sizing: border-box;
 }
 
-#resume-content h1,
-#resume-content h2,
-#resume-content h3,
+/* Hierarquia de títulos */
+#resume-content h1 {
+  font-size: 24px !important;
+  line-height: 1.2 !important;
+  margin: 0 0 12px 0 !important;
+  font-weight: 700 !important;
+  page-break-after: avoid;
+}
+
+#resume-content h2 {
+  font-size: 20px !important;
+  line-height: 1.2 !important;
+  margin: 16px 0 8px 0 !important;
+  font-weight: 600 !important;
+  page-break-after: avoid;
+}
+
+#resume-content h3 {
+  font-size: 18px !important;
+  line-height: 1.2 !important;
+  margin: 12px 0 6px 0 !important;
+  font-weight: 600 !important;
+  page-break-after: avoid;
+}
+
 #resume-content h4,
 #resume-content h5,
 #resume-content h6 {
+  font-size: 16px !important;
   line-height: 1.2 !important;
-  margin-bottom: 0.5rem !important;
+  margin: 8px 0 4px 0 !important;
   font-weight: 600 !important;
+  page-break-after: avoid;
 }
 
+/* Parágrafos e texto */
 #resume-content p {
+  font-size: 14px !important;
   line-height: 1.4 !important;
-  margin-bottom: 0.25rem !important;
+  margin: 0 0 6px 0 !important;
+  page-break-inside: avoid;
+}
+
+/* Espaçamentos */
+#resume-content .space-y-1 > * + * {
+  margin-top: 4px !important;
 }
 
 #resume-content .space-y-2 > * + * {
-  margin-top: 0.5rem !important;
+  margin-top: 8px !important;
+}
+
+#resume-content .space-y-3 > * + * {
+  margin-top: 12px !important;
 }
 
 #resume-content .space-y-4 > * + * {
-  margin-top: 1rem !important;
+  margin-top: 16px !important;
 }
 
-/* Garantir que elementos não se sobreponham */
+/* Seções */
 #resume-content section {
   position: relative !important;
-  z-index: 1 !important;
-  margin-bottom: 1rem !important;
+  margin-bottom: 20px !important;
+  page-break-inside: avoid;
 }
 
-/* Melhorar contraste para PDF */
+/* Listas */
+#resume-content ul,
+#resume-content ol {
+  margin: 8px 0 !important;
+  padding-left: 20px !important;
+}
+
+#resume-content li {
+  margin-bottom: 4px !important;
+  line-height: 1.4 !important;
+  page-break-inside: avoid;
+}
+
+/* Links e texto especial */
+#resume-content a {
+  color: #0066cc !important;
+  text-decoration: none !important;
+}
+
+#resume-content strong,
+#resume-content b {
+  font-weight: 600 !important;
+}
+
+/* Garantir fundo branco e texto preto */
 #resume-content {
   background-color: white !important;
   color: #000000 !important;
+}
+
+/* Evitar quebras de página indesejadas */
+#resume-content .avoid-break {
+  page-break-inside: avoid !important;
+}
+
+/* Flexbox e grid para PDF */
+#resume-content .flex {
+  display: flex !important;
+}
+
+#resume-content .grid {
+  display: grid !important;
+}
+
+/* Margens e padding consistentes */
+#resume-content .p-4 {
+  padding: 16px !important;
+}
+
+#resume-content .p-6 {
+  padding: 24px !important;
+}
+
+#resume-content .mb-4 {
+  margin-bottom: 16px !important;
+}
+
+#resume-content .mb-6 {
+  margin-bottom: 24px !important;
 }

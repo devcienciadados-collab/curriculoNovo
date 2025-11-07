@@ -13,96 +13,96 @@ export const useResumeDownload = (title?: string) => {
     setIsLoading(true);
 
     try {
-      // Importação dinâmica para reduzir bundle
-      const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
-        import('jspdf'),
-        import('html2canvas')
-      ]);
+      // Importação dinâmica do html2pdf
+      const html2pdf = (await import('html2pdf.js')).default;
 
       toast({
         title: "Gerando PDF...",
         description: "Aguarde enquanto processamos seu currículo.",
       });
 
-      // Preparar o DOM para captura
-      const originalStyle = resume.style.cssText;
-      
-      // Aplicar estilos temporários para melhor renderização
-      resume.style.cssText = `
-        ${originalStyle}
-        position: relative !important;
-        z-index: 999 !important;
-        background: white !important;
-        width: 794px !important;
-        min-height: auto !important;
-        padding: 20px !important;
-        margin: 0 !important;
-        box-shadow: none !important;
-        border: none !important;
-        transform: none !important;
-      `;
-      
-      // Aguardar fontes e layout
+      // Aguardar fontes carregarem
       await document.fonts.ready;
-      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Forçar reflow
-      resume.offsetHeight;
-      
-      // Captura o elemento como canvas com configurações otimizadas
-      const canvas = await html2canvas(resume, {
-        scale: 1.5,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        width: resume.offsetWidth,
-        height: resume.offsetHeight,
-        scrollX: 0,
-        scrollY: 0,
-        windowWidth: resume.offsetWidth,
-        windowHeight: resume.offsetHeight,
-        onclone: (clonedDoc) => {
-          // Garantir que estilos sejam aplicados no clone
-          const clonedElement = clonedDoc.getElementById('resume-content');
-          if (clonedElement) {
-            clonedElement.style.transform = 'none';
-            clonedElement.style.width = resume.offsetWidth + 'px';
-            clonedElement.style.height = 'auto';
+      // Configurações otimizadas para preservar layout
+      const options = {
+        margin: [10, 10, 10, 10] as [number, number, number, number], // margens em mm [top, left, bottom, right]
+        filename: `${title ?? "Currículo"}.pdf`,
+        image: { 
+          type: 'jpeg' as const, 
+          quality: 0.98 
+        },
+        html2canvas: {
+          scale: 2, // alta qualidade
+          useCORS: true,
+          letterRendering: true,
+          allowTaint: false,
+          backgroundColor: '#ffffff',
+          scrollX: 0,
+          scrollY: 0,
+          width: resume.scrollWidth,
+          height: resume.scrollHeight,
+          onclone: (clonedDoc: Document) => {
+            // Aplicar estilos específicos para PDF no clone
+            const clonedElement = clonedDoc.getElementById('resume-content');
+            if (clonedElement) {
+              clonedElement.style.cssText += `
+                width: 210mm !important;
+                max-width: 210mm !important;
+                min-height: auto !important;
+                padding: 15mm !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+                background: white !important;
+                color: black !important;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+                line-height: 1.4 !important;
+              `;
+              
+              // Ajustar todos os elementos filhos
+              const allElements = clonedElement.querySelectorAll('*');
+              allElements.forEach((el: Element) => {
+                const htmlEl = el as HTMLElement;
+                htmlEl.style.pageBreakInside = 'avoid';
+                htmlEl.style.boxSizing = 'border-box';
+                
+                // Ajustar títulos
+                if (htmlEl.tagName.match(/^H[1-6]$/)) {
+                  htmlEl.style.marginBottom = '8px';
+                  htmlEl.style.marginTop = '12px';
+                  htmlEl.style.lineHeight = '1.2';
+                  htmlEl.style.fontWeight = '600';
+                }
+                
+                // Ajustar parágrafos
+                if (htmlEl.tagName === 'P') {
+                  htmlEl.style.marginBottom = '6px';
+                  htmlEl.style.lineHeight = '1.4';
+                }
+                
+                // Ajustar seções
+                if (htmlEl.tagName === 'SECTION') {
+                  htmlEl.style.marginBottom = '16px';
+                  htmlEl.style.pageBreakInside = 'avoid';
+                }
+              });
+            }
           }
+        },
+        jsPDF: {
+          unit: 'mm' as const,
+          format: 'a4' as const,
+          orientation: 'portrait' as const,
+          compress: true
+        },
+        pagebreak: {
+          mode: ['avoid-all', 'css', 'legacy']
         }
-      });
-      
-      // Restaurar estilo original
-      resume.style.cssText = originalStyle;
+      };
 
-      // Cria o PDF com margens adequadas
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-        compress: true
-      });
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      // Calcular dimensões mantendo proporção
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      
-      const finalWidth = imgWidth * ratio;
-      const finalHeight = imgHeight * ratio;
-      
-      // Centralizar na página
-      const x = (pdfWidth - finalWidth) / 2;
-      const y = (pdfHeight - finalHeight) / 2;
-
-      pdf.addImage(imgData, 'JPEG', x, y, finalWidth, finalHeight);
-      
-      // Download do PDF
-      pdf.save(`${title ?? "Currículo"}.pdf`);
+      // Gerar e baixar o PDF
+      await html2pdf().set(options).from(resume).save();
 
       toast({
         title: "PDF gerado com sucesso!",
