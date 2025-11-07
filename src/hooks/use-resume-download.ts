@@ -8,24 +8,6 @@ export const useResumeDownload = (title?: string) => {
 
   const { mutateAsync: handleGetResumeUrl, isPending } = useMutation({
     mutationFn: ApiService.getResumeUrl,
-    onError: async (error: any) => {
-      let message = "Ocorreu um erro inesperado.";
-
-      if (error.response?.data) {
-        try {
-          const errorData = JSON.parse(await error.response.data.text());
-          message = errorData.error || message;
-        } catch (e) {
-          // Ignore json parse error
-        }
-      }
-      
-      toast({
-        title: "Erro ao baixar currículo",
-        description: message,
-        variant: "destructive",
-      });
-    }
   });
 
   const handleDownloadResume = async () => {
@@ -51,8 +33,23 @@ export const useResumeDownload = (title?: string) => {
       link.remove();
 
       window.URL.revokeObjectURL(url);
-    } catch (error) {
-      // toast is already shown by onError
+    } catch (error: any) {
+      let message = "Ocorreu um erro inesperado.";
+
+      if (error.response?.data) {
+        try {
+          const errorData = JSON.parse(await error.response.data.text());
+          message = errorData.error || message;
+        } catch (e) {
+          // Ignore json parse error
+        }
+      }
+      
+      toast({
+        title: "Erro ao baixar currículo",
+        description: message,
+        variant: "destructive",
+      });
     }
   };
 
